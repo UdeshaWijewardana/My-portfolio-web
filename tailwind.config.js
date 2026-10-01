@@ -32,6 +32,7 @@ module.exports = {
         "pulse-slow": "pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "float": "float 6s ease-in-out infinite",
         "shimmer": "shimmer 2.5s infinite linear",
+        "fadeIn": "fadeIn 0.3s ease-out forwards",
       },
       keyframes: {
         float: {
@@ -41,6 +42,10 @@ module.exports = {
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
+        },
+        fadeIn: {
+          "0%": { opacity: "0", transform: "scale(0.97)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
         },
       },
     },
