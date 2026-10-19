@@ -6,18 +6,13 @@ export default function manifest() {
       "Portfolio of D.A.N.U Wijewardana — Digital Marketing, Social Media Management, and Web Design.",
     start_url: "/",
     display: "standalone",
-    background_color: "#070913",
-    theme_color: "#070913",
+    background_color: "#f7f6f2",
+    theme_color: "#f7f6f2",
     icons: [
       {
-        src: "/assets/social/profile.jpeg",
-        sizes: "192x192",
-        type: "image/jpeg",
-      },
-      {
-        src: "/assets/social/profile.jpeg",
-        sizes: "512x512",
-        type: "image/jpeg",
+        src: "/icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
       },
     ],
   };

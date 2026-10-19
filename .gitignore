@@ -39,5 +39,8 @@ next-env.d.ts
 *.swp
 *.swo
 
+# Unrelated local media downloads
+/public/assets/Telegram Desktop/
+
 # Backup of old extracted folder if needed
 My-portfolio-web-main/

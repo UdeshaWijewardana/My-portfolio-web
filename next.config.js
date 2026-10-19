@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    unoptimized: true, // Guarantees instant compatibility and maximum speed for local and static deployment
+    formats: ["image/avif", "image/webp"],
   },
 };
 

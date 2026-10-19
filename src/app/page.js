@@ -6,10 +6,12 @@ import SocialDesigns from "@/components/SocialDesigns";
 import Projects from "@/components/Projects";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import InteractionController from "@/components/InteractionController";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-[#070913] text-slate-100 flex flex-col selection:bg-purple-600 selection:text-white">
+    <div className="site-shell">
+      <InteractionController />
       {/* Navigation */}
       <Navbar />
 

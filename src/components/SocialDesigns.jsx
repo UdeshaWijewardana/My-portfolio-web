@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Sparkles, Maximize2, X, ChevronLeft, ChevronRight, Eye, Grid3X3 } from "lucide-react";
 
@@ -45,6 +45,7 @@ export default function SocialDesigns() {
   const [activeTab, setActiveTab] = useState("All");
   const [showAll, setShowAll] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const touchStartX = useRef(null);
 
   const categories = ["All", "Social Media Creatives", "Promotions & Ads"];
 
@@ -72,26 +73,23 @@ export default function SocialDesigns() {
   }, [lightboxIndex, filteredDesigns.length]);
 
   return (
-    <section id="designs" className="relative py-20 md:py-28 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <section id="designs" className="section design-section" data-reveal>
+      <div className="wrap">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div className="design-head">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 text-xs font-semibold text-pink-300 uppercase tracking-wider mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              Social Media Management
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            <span className="kicker">Social Media Management</span>
+            <h2 className="section-title">
               Social Media &amp; Ad Creatives
             </h2>
-            <p className="mt-3 text-slate-300 text-base max-w-2xl">
+            <p className="section-copy">
               A curated collection of promotional posters, Meta Ad designs, and high-impact social media creatives crafted for audience engagement.
             </p>
           </div>
 
           {/* Clean Category Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur-md">
+          <div className="design-filters">
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -99,11 +97,7 @@ export default function SocialDesigns() {
                   setActiveTab(cat);
                   setShowAll(false);
                 }}
-                className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                  activeTab === cat
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
-                }`}
+                className={activeTab === cat ? "active" : ""}
               >
                 {cat}
               </button>
@@ -112,15 +106,24 @@ export default function SocialDesigns() {
         </div>
 
         {/* Gallery Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        <div className="design-grid" key={`${activeTab}-${showAll}`}>
           {displayedDesigns.map((design, idx) => (
             <div
               key={design.id}
               onClick={() => setLightboxIndex(idx)}
-              className="group relative rounded-2xl overflow-hidden bg-slate-900/70 border border-white/10 hover:border-purple-500/40 cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-purple-950/40 transition-all duration-300 hover:-translate-y-1.5 flex flex-col"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setLightboxIndex(idx);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open ${design.title} in image viewer`}
+              className="design-card"
             >
               {/* Image Aspect Box */}
-              <div className="relative aspect-[4/5] w-full overflow-hidden bg-slate-950">
+              <div className="design-image">
                 <Image
                   src={`/assets/social/${design.file}`}
                   alt={design.title}
@@ -146,7 +149,7 @@ export default function SocialDesigns() {
               </div>
 
               {/* Caption & Title */}
-              <div className="p-4 flex-1 flex flex-col justify-between bg-slate-900/60 border-t border-white/5">
+              <div className="design-caption">
                 <div>
                   <h4 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
                     {design.title}
@@ -192,6 +195,23 @@ export default function SocialDesigns() {
           <div
             className="relative max-w-4xl w-full max-h-[92vh] flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={(event) => {
+              touchStartX.current = event.changedTouches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              if (touchStartX.current === null) return;
+              const distance = (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+              touchStartX.current = null;
+              if (Math.abs(distance) < 45) return;
+              setLightboxIndex((previous) =>
+                distance > 0
+                  ? previous > 0 ? previous - 1 : filteredDesigns.length - 1
+                  : previous < filteredDesigns.length - 1 ? previous + 1 : 0
+              );
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${filteredDesigns[lightboxIndex].title} image preview`}
           >
             {/* Top Bar with title & close */}
             <div className="w-full flex items-center justify-between pb-3 text-white">
