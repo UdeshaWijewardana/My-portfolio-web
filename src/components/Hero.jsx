@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MessageCircle } from "lucide-react";
 
 const statistics = [
   ["34+", "Creative Ad & Social Designs"],
@@ -62,6 +62,16 @@ export default function Hero() {
               <a href="#contact" className="btn-light">
                 <span>Contact Me</span>
                 <ArrowRight size={15} aria-hidden="true" />
+              </a>
+              <a
+                href="https://wa.me/94750739897?text=Hi%20Danu,%20I%20saw%20your%20portfolio%20and%20would%20like%20to%20discuss%20a%20project!"
+                className="btn-light hero-whatsapp"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Contact Danu via WhatsApp"
+              >
+                <MessageCircle size={15} aria-hidden="true" />
+                <span>WhatsApp Me</span>
               </a>
             </div>
           </div>

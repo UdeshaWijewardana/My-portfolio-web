@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowUpRight, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const inquiryOptions = [
@@ -98,10 +99,26 @@ export default function Contact() {
               Have an upcoming brand marketing campaign, social media strategy, or
               website project? Get in touch directly.
             </p>
+            <a
+              className="whatsapp-primary"
+              href="https://wa.me/94750739897?text=Hi%20Danu,%20I%20saw%20your%20portfolio%20and%20would%20like%20to%20discuss%20a%20project!"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Contact Danu via WhatsApp"
+            >
+              <span className="whatsapp-primary-icon" aria-hidden="true">
+                <MessageCircle size={17} />
+              </span>
+              <span className="whatsapp-primary-copy">
+                <small>Fast direct contact</small>
+                <strong>Contact via WhatsApp</strong>
+              </span>
+              <ArrowUpRight className="whatsapp-primary-arrow" size={17} aria-hidden="true" />
+            </a>
             <div className="contact-methods">
-              <a className="contact-method" href="https://wa.me/94716973217?text=Hi%20Danu,%20I%20saw%20your%20portfolio%20and%20would%20like%20to%20discuss%20a%20project!" target="_blank" rel="noreferrer"><small>Fastest response</small><strong>WhatsApp · +94 71 697 3217</strong></a>
+              <a className="contact-method" href="https://wa.me/94750739897?text=Hi%20Danu,%20I%20saw%20your%20portfolio%20and%20would%20like%20to%20discuss%20a%20project!" target="_blank" rel="noreferrer"><small>Fastest response</small><strong>WhatsApp · +94 75 073 9897</strong></a>
               <a className="contact-method" href={`mailto:${emailAddress}`}><small>Email directly</small><strong>{emailAddress}</strong></a>
-              <a className="contact-method" href="tel:+94716973217"><small>Direct call</small><strong>+94 71 697 3217</strong></a>
+              <a className="contact-method" href="tel:+94750739897"><small>Direct call</small><strong>+94 75 073 9897</strong></a>
             </div>
           </div>
           <form className="contact-form" onSubmit={submit} noValidate aria-busy={submitting}>

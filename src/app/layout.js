@@ -105,7 +105,7 @@ export default function RootLayout({ children }) {
         "url": siteUrl,
         "image": `${siteUrl}/images/hero-background.png`,
         "email": "mailto:nimeshudeshawijewardana@gmail.com",
-        "telephone": "+94716973217",
+        "telephone": "+94750739897",
         "knowsAbout": [
           "Digital Marketing",
           "Social Media Management",
