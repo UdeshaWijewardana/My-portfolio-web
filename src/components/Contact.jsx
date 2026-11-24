@@ -116,9 +116,9 @@ export default function Contact() {
               <ArrowUpRight className="whatsapp-primary-arrow" size={17} aria-hidden="true" />
             </a>
             <div className="contact-methods">
-              <a className="contact-method" href="https://wa.me/94750739897?text=Hi%20Danu,%20I%20saw%20your%20portfolio%20and%20would%20like%20to%20discuss%20a%20project!" target="_blank" rel="noreferrer"><small>Fastest response</small><strong>WhatsApp · +94 75 073 9897</strong></a>
+              <a className="contact-method" href="https://wa.me/94750739897?text=Hi%20Danu,%20I%20saw%20your%20portfolio%20and%20would%20like%20to%20discuss%20a%20project!" target="_blank" rel="noreferrer"><small>Fastest response</small><strong>WhatsApp · +94 750739897</strong></a>
               <a className="contact-method" href={`mailto:${emailAddress}`}><small>Email directly</small><strong>{emailAddress}</strong></a>
-              <a className="contact-method" href="tel:+94750739897"><small>Direct call</small><strong>+94 75 073 9897</strong></a>
+              <a className="contact-method" href="tel:+94750739897"><small>Direct call</small><strong>+94 750739897</strong></a>
             </div>
           </div>
           <form className="contact-form" onSubmit={submit} noValidate aria-busy={submitting}>
