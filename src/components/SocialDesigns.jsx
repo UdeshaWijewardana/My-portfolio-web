@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { Sparkles, Maximize2, X, ChevronLeft, ChevronRight, Eye, Grid3X3 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Eye, Grid3X3 } from "lucide-react";
 
 const allDesigns = [
   { id: 1, file: "Design 1.jpg", title: "Campaign Announcement", category: "Social Media Creatives", caption: "Official promotional campaign graphic designed for high reach and engagement." },
@@ -44,33 +44,132 @@ const allDesigns = [
 export default function SocialDesigns() {
   const [activeTab, setActiveTab] = useState("All");
   const [showAll, setShowAll] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(null);
-  const touchStartX = useRef(null);
+  const [lightboxId, setLightboxId] = useState(null);
+  const [carouselBoundaries, setCarouselBoundaries] = useState({ previous: false, next: false });
+  const carouselRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const lastTriggerRef = useRef(null);
+  const lightboxTouchStartX = useRef(null);
 
   const categories = ["All", "Social Media Creatives", "Promotions & Ads"];
+  const curatedDesigns = useMemo(() => allDesigns.slice(0, 12), []);
+  const sourceDesigns = showAll ? allDesigns : curatedDesigns;
+  const displayedDesigns = useMemo(
+    () =>
+      activeTab === "All"
+        ? sourceDesigns
+        : sourceDesigns.filter((design) => design.category === activeTab),
+    [activeTab, sourceDesigns]
+  );
+  const lightboxIndex = displayedDesigns.findIndex((design) => design.id === lightboxId);
+  const activeDesign = lightboxIndex >= 0 ? displayedDesigns[lightboxIndex] : null;
 
-  const filteredDesigns =
-    activeTab === "All"
-      ? allDesigns
-      : allDesigns.filter((d) => d.category === activeTab);
+  const closeLightbox = useCallback(() => setLightboxId(null), []);
 
-  const displayedDesigns = showAll ? filteredDesigns : filteredDesigns.slice(0, 12);
+  const moveLightbox = useCallback(
+    (direction) => {
+      if (!displayedDesigns.length || lightboxIndex < 0) return;
+      const nextIndex =
+        (lightboxIndex + direction + displayedDesigns.length) % displayedDesigns.length;
+      setLightboxId(displayedDesigns[nextIndex].id);
+    },
+    [displayedDesigns, lightboxIndex]
+  );
 
-  // Keyboard navigation for lightbox
+  const updateCarouselBoundaries = useCallback(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    const maximumScroll = Math.max(0, carousel.scrollWidth - carousel.clientWidth);
+    const previous = carousel.scrollLeft > 2;
+    const next = carousel.scrollLeft < maximumScroll - 2;
+    setCarouselBoundaries((current) =>
+      current.previous === previous && current.next === next
+        ? current
+        : { previous, next }
+    );
+  }, []);
+
+  const moveCarousel = useCallback((direction) => {
+    const carousel = carouselRef.current;
+    const firstCard = carousel?.firstElementChild;
+    if (!carousel || !firstCard) return;
+    const styles = window.getComputedStyle(carousel);
+    const gap = Number.parseFloat(styles.columnGap || styles.gap) || 0;
+    carousel.scrollBy({ left: direction * (firstCard.getBoundingClientRect().width + gap), behavior: "smooth" });
+  }, []);
+
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (lightboxIndex === null) return;
-      if (e.key === "Escape") setLightboxIndex(null);
-      if (e.key === "ArrowLeft") {
-        setLightboxIndex((prev) => (prev > 0 ? prev - 1 : filteredDesigns.length - 1));
-      }
-      if (e.key === "ArrowRight") {
-        setLightboxIndex((prev) => (prev < filteredDesigns.length - 1 ? prev + 1 : 0));
-      }
+    setLightboxId(null);
+    if (carouselRef.current) carouselRef.current.scrollLeft = 0;
+    const frame = window.requestAnimationFrame(updateCarouselBoundaries);
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTab, showAll, updateCarouselBoundaries]);
+
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel || showAll) return undefined;
+    const observer = new ResizeObserver(updateCarouselBoundaries);
+    observer.observe(carousel);
+    updateCarouselBoundaries();
+    return () => observer.disconnect();
+  }, [displayedDesigns.length, showAll, updateCarouselBoundaries]);
+
+  useEffect(() => {
+    if (!activeDesign) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") closeLightbox();
+      if (event.key === "ArrowLeft") moveLightbox(-1);
+      if (event.key === "ArrowRight") moveLightbox(1);
     };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightboxIndex, filteredDesigns.length]);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      lastTriggerRef.current?.focus();
+    };
+  }, [activeDesign, closeLightbox, moveLightbox]);
+
+  const openLightbox = (designId, trigger) => {
+    lastTriggerRef.current = trigger;
+    setLightboxId(designId);
+  };
+
+  const renderCard = (design) => (
+    <button
+      key={design.id}
+      type="button"
+      onClick={(event) => openLightbox(design.id, event.currentTarget)}
+      aria-label={`Open ${design.title} in full-size image viewer`}
+      className="design-card"
+    >
+      <span className="design-image">
+        <Image
+          src={`/assets/social/${design.file}`}
+          alt={design.title}
+          fill
+          sizes={showAll
+            ? "(max-width: 560px) 50vw, (max-width: 900px) 33vw, 25vw"
+            : "(max-width: 560px) 78vw, (max-width: 900px) 42vw, 25vw"}
+          loading="lazy"
+        />
+        <span className="design-category">{design.category}</span>
+      </span>
+      <span className="design-caption">
+        <span>
+          <strong>{design.title}</strong>
+          <small>{design.caption}</small>
+        </span>
+        <span className="design-view-label" aria-hidden="true">
+          View <Eye size={15} />
+        </span>
+      </span>
+    </button>
+  );
 
   return (
     <section id="designs" className="section design-section" data-reveal>
@@ -88,16 +187,14 @@ export default function SocialDesigns() {
             </p>
           </div>
 
-          {/* Clean Category Filter Tabs */}
-          <div className="design-filters">
+          <div className="design-filters" role="group" aria-label="Filter designs by category">
             {categories.map((cat) => (
               <button
+                type="button"
                 key={cat}
-                onClick={() => {
-                  setActiveTab(cat);
-                  setShowAll(false);
-                }}
+                onClick={() => setActiveTab(cat)}
                 className={activeTab === cat ? "active" : ""}
+                aria-pressed={activeTab === cat}
               >
                 {cat}
               </button>
@@ -105,180 +202,124 @@ export default function SocialDesigns() {
           </div>
         </div>
 
-        {/* Gallery Grid */}
-        <div className="design-grid" key={`${activeTab}-${showAll}`}>
-          {displayedDesigns.map((design, idx) => (
-            <div
-              key={design.id}
-              onClick={() => setLightboxIndex(idx)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  setLightboxIndex(idx);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label={`Open ${design.title} in image viewer`}
-              className="design-card"
-            >
-              {/* Image Aspect Box */}
-              <div className="design-image">
-                <Image
-                  src={`/assets/social/${design.file}`}
-                  alt={design.title}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-
-                {/* Hover overlay with zoom button */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#070913] via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-4">
-                  <span className="p-3 rounded-full bg-purple-600/90 text-white shadow-xl shadow-purple-950/60 transform scale-90 group-hover:scale-100 transition-transform">
-                    <Maximize2 className="w-5 h-5" />
-                  </span>
-                </div>
-
-                {/* Category Pill on Image */}
-                <div className="absolute top-3 left-3">
-                  <span className="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wide uppercase bg-black/70 backdrop-blur-md text-purple-300 border border-white/10">
-                    {design.category}
-                  </span>
+        {displayedDesigns.length ? (
+          showAll ? (
+            <div className="design-grid design-grid-expanded" key={`grid-${activeTab}`}>
+              {displayedDesigns.map(renderCard)}
+            </div>
+          ) : (
+            <div className="design-carousel" aria-label={`${activeTab} curated design carousel`}>
+              <div className="design-carousel-toolbar">
+                <p aria-live="polite">
+                  <strong>{displayedDesigns.length}</strong> curated design{displayedDesigns.length === 1 ? "" : "s"}
+                </p>
+                <div className="design-carousel-controls">
+                  <button
+                    type="button"
+                    onClick={() => moveCarousel(-1)}
+                    disabled={!carouselBoundaries.previous}
+                    aria-label="View previous design"
+                  >
+                    <ChevronLeft aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveCarousel(1)}
+                    disabled={!carouselBoundaries.next}
+                    aria-label="View next design"
+                  >
+                    <ChevronRight aria-hidden="true" />
+                  </button>
                 </div>
               </div>
-
-              {/* Caption & Title */}
-              <div className="design-caption">
-                <div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
-                    {design.title}
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1 line-clamp-2 leading-relaxed">
-                    {design.caption}
-                  </p>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-[11px] text-purple-400 font-medium">
-                  <span>View High-Res</span>
-                  <Eye className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </div>
+              <div
+                ref={carouselRef}
+                className="design-carousel-track"
+                onScroll={updateCarouselBoundaries}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowLeft") {
+                    event.preventDefault();
+                    moveCarousel(-1);
+                  }
+                  if (event.key === "ArrowRight") {
+                    event.preventDefault();
+                    moveCarousel(1);
+                  }
+                }}
+                tabIndex={0}
+                aria-label="Designs. Use left and right arrow keys to navigate."
+              >
+                {displayedDesigns.map(renderCard)}
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Load More Button */}
-        {filteredDesigns.length > 12 && (
-          <div className="mt-12 text-center">
-            <button
-              onClick={() => setShowAll(!showAll)}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-slate-900/90 hover:bg-slate-800 border border-white/10 hover:border-purple-500/40 shadow-lg shadow-black/40 transition-all duration-200"
-            >
-              <Grid3X3 className="w-4 h-4 text-purple-400" />
-              <span>
-                {showAll
-                  ? "Show Less (Curated 12)"
-                  : `Show All ${filteredDesigns.length} Designs`}
-              </span>
-            </button>
-          </div>
+          )
+        ) : (
+          <p className="design-empty">No designs are available in this category.</p>
         )}
 
+        <div className="design-view-toggle">
+          <button type="button" onClick={() => setShowAll((current) => !current)}>
+            <Grid3X3 size={18} aria-hidden="true" />
+            <span>{showAll ? "Show Less (Curated 12)" : "View All Designs"}</span>
+          </button>
+          {showAll && (
+            <span aria-live="polite">
+              Showing {displayedDesigns.length} of {allDesigns.length} designs
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Lightbox Modal */}
-      {lightboxIndex !== null && filteredDesigns[lightboxIndex] && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-xl animate-fadeIn"
-          onClick={() => setLightboxIndex(null)}
-        >
+      {activeDesign && (
+        <div className="design-lightbox" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) closeLightbox();
+        }}>
           <div
-            className="relative max-w-4xl w-full max-h-[92vh] flex flex-col items-center"
-            onClick={(e) => e.stopPropagation()}
-            onTouchStart={(event) => {
-              touchStartX.current = event.changedTouches[0]?.clientX ?? null;
-            }}
-            onTouchEnd={(event) => {
-              if (touchStartX.current === null) return;
-              const distance = (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
-              touchStartX.current = null;
-              if (Math.abs(distance) < 45) return;
-              setLightboxIndex((previous) =>
-                distance > 0
-                  ? previous > 0 ? previous - 1 : filteredDesigns.length - 1
-                  : previous < filteredDesigns.length - 1 ? previous + 1 : 0
-              );
-            }}
+            className="design-lightbox-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label={`${filteredDesigns[lightboxIndex].title} image preview`}
+            aria-labelledby="design-lightbox-title"
+            onTouchStart={(event) => {
+              lightboxTouchStartX.current = event.changedTouches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              if (lightboxTouchStartX.current === null) return;
+              const distance = (event.changedTouches[0]?.clientX ?? lightboxTouchStartX.current) - lightboxTouchStartX.current;
+              lightboxTouchStartX.current = null;
+              if (Math.abs(distance) >= 45) moveLightbox(distance > 0 ? -1 : 1);
+            }}
           >
-            {/* Top Bar with title & close */}
-            <div className="w-full flex items-center justify-between pb-3 text-white">
-              <div className="flex items-center gap-3">
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-600/30 border border-purple-500/30 text-purple-200">
-                  {filteredDesigns[lightboxIndex].category}
-                </span>
-                <h3 className="text-base sm:text-lg font-bold">
-                  {filteredDesigns[lightboxIndex].title}
-                </h3>
-                <span className="text-xs text-slate-400">
-                  ({lightboxIndex + 1} of {filteredDesigns.length})
-                </span>
+            <div className="design-lightbox-header">
+              <div>
+                <span>{activeDesign.category}</span>
+                <h3 id="design-lightbox-title">{activeDesign.title}</h3>
+                <small>{lightboxIndex + 1} of {displayedDesigns.length}</small>
               </div>
-
-              <button
-                onClick={() => setLightboxIndex(null)}
-                aria-label="Close modal"
-                className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 transition"
-              >
-                <X className="w-5 h-5" />
+              <button ref={closeButtonRef} type="button" onClick={closeLightbox} aria-label="Close image preview">
+                <X aria-hidden="true" />
               </button>
             </div>
 
-            {/* Main Modal Image */}
-            <div className="relative w-full h-[65vh] sm:h-[72vh] rounded-2xl overflow-hidden bg-black/60 border border-white/10 flex items-center justify-center">
+            <div className="design-lightbox-media">
               <Image
-                src={`/assets/social/${filteredDesigns[lightboxIndex].file}`}
-                alt={filteredDesigns[lightboxIndex].title}
+                src={`/assets/social/${activeDesign.file}`}
+                alt={activeDesign.title}
                 fill
                 priority
-                className="object-contain"
+                sizes="100vw"
               />
-
-              {/* Prev Button */}
-              <button
-                onClick={() =>
-                  setLightboxIndex((prev) =>
-                    prev > 0 ? prev - 1 : filteredDesigns.length - 1
-                  )
-                }
-                aria-label="Previous image"
-                className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/60 hover:bg-purple-600/80 text-white backdrop-blur-md border border-white/10 transition"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-
-              {/* Next Button */}
-              <button
-                onClick={() =>
-                  setLightboxIndex((prev) =>
-                    prev < filteredDesigns.length - 1 ? prev + 1 : 0
-                  )
-                }
-                aria-label="Next image"
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-black/60 hover:bg-purple-600/80 text-white backdrop-blur-md border border-white/10 transition"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
+              {displayedDesigns.length > 1 && (
+                <>
+                  <button type="button" className="design-lightbox-prev" onClick={() => moveLightbox(-1)} aria-label="View previous image">
+                    <ChevronLeft aria-hidden="true" />
+                  </button>
+                  <button type="button" className="design-lightbox-next" onClick={() => moveLightbox(1)} aria-label="View next image">
+                    <ChevronRight aria-hidden="true" />
+                  </button>
+                </>
+              )}
             </div>
-
-            {/* Bottom Caption */}
-            <div className="w-full text-center mt-3 px-4">
-              <p className="text-xs sm:text-sm text-slate-300">
-                {filteredDesigns[lightboxIndex].caption}
-              </p>
-            </div>
+            <p>{activeDesign.caption}</p>
           </div>
         </div>
       )}
